@@ -1,5 +1,7 @@
 # Jokester
 
+![Demo img](https://cloud-dqocb3shc-hack-club-bot.vercel.app/0image.png)
+
 A modern, performant meme platform built with Next.js 14, featuring edge caching, infinite scroll, and real-time meme generation.
 
 ## Features
