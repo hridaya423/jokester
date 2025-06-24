@@ -4,10 +4,10 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { templateId: string } }
+  { params }: { params: Promise<{ templateId: string }> }
 ) {
   try {
-    const templateId = params.templateId;
+    const { templateId } = await params;
 
     const imgflipAnalysis = await analyzeImgflipExamples(templateId);
     
