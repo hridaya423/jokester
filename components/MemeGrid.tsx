@@ -50,11 +50,20 @@ export default function MemeGrid({ initialMemes, templates, initialAfter }: Meme
       
       const data = await res.json();
       
+      console.log('Client: Received data:', { 
+        hasData: !!data,
+        dataKeys: Object.keys(data || {}),
+        memesType: typeof data?.memes,
+        memesLength: data?.memes?.length,
+        fullData: data
+      });
+      
       if (data.error) {
         throw new Error(data.error);
       }
       
       if (!data.memes || !Array.isArray(data.memes)) {
+        console.error('Client: Invalid response format. Expected memes array, got:', data);
         throw new Error('Invalid response format');
       }
       

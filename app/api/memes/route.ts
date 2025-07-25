@@ -17,44 +17,45 @@ export async function GET(request: Request) {
 
     const fetchPromise = fetchRedditMemes('memes', 'day', after || undefined);
     
-    const data = await Promise.race([fetchPromise, timeoutPromise]);
+    const data = await Promise.race([fetchPromise, timeoutPromise]) as Awaited<ReturnType<typeof fetchRedditMemes>>;
     
-    const response = NextResponse.json(data);
+    console.log('API: Successfully fetched data:', { 
+      memesCount: data?.memes?.length || 0, 
+      hasAfter: !!data?.after,
+      dataStructure: Object.keys(data || {})
+    });
+    
+    const safeData = {
+      memes: Array.isArray(data?.memes) ? data.memes : [],
+      after: data?.after || null
+    };
+    
+    if (data && (!data.memes || !Array.isArray(data.memes))) {
+      console.error('API: Invalid data structure from Reddit function:', data);
+    }
+    
+    const response = NextResponse.json(safeData);
     
     response.headers.set('Cache-Control', 'public, s-maxage=120, stale-while-revalidate=60');
     
     return response;
   } catch (error) {
-    console.error('Error in memes API route:', error);
-    
-    
+    console.error('Error in memes API route:', error, {
+      errorName: error instanceof Error ? error.name : 'Unknown',
+      errorMessage: error instanceof Error ? error.message : String(error),
+      isTimeout: error instanceof Error && error.message === 'Request timeout',
+      after: after
+    });
     if (after) {
-      console.warn('Pagination request failed, returning fallback');
-      const fallbackData = {
-        memes: [
-          {
-            id: `fallback-api-${Date.now()}`,
-            title: 'Content temporarily unavailable',
-            url: 'https://i.imgur.com/3vLnXve.png',
-            author: 'system',
-            likes: 0,
-            comments: 0
-          }
-        ],
-        after: null
-      };
-      
-      const fallbackResponse = NextResponse.json(fallbackData);
-      fallbackResponse.headers.set('Cache-Control', 'no-store');
-      return fallbackResponse;
+      console.warn('Pagination request failed, returning empty result');
+      const emptyResponse = NextResponse.json({ memes: [], after: null });
+      emptyResponse.headers.set('Cache-Control', 'no-store');
+      return emptyResponse;
     }
     
-    const errorResponse = NextResponse.json(
-      { error: 'Failed to fetch memes' }, 
-      { status: 500 }
-    );
-    errorResponse.headers.set('Cache-Control', 'no-store');
-    
-    return errorResponse;
+    console.warn('Initial load failed, returning empty result');
+    const emptyResponse = NextResponse.json({ memes: [], after: null });
+    emptyResponse.headers.set('Cache-Control', 'no-store');
+    return emptyResponse;
   }
 }

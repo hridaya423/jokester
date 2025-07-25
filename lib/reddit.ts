@@ -2,40 +2,6 @@
 
 import { Meme } from '@/types';
 
-const FALLBACK_MEMES: Meme[] = [
-  {
-    id: 'sample1',
-    title: 'Example Meme 1',
-    url: 'https://i.imgur.com/3vLnXve.png',
-    author: 'user1',
-    likes: 1200,
-    comments: 45
-  },
-  {
-    id: 'sample2',
-    title: 'Example Meme 2',
-    url: 'https://i.imgur.com/2ZyFfWO.png',
-    author: 'user2',
-    likes: 980,
-    comments: 32
-  },
-  {
-    id: 'sample3',
-    title: 'Example Meme 3',
-    url: 'https://i.imgur.com/5vLnXve.png',
-    author: 'user3',
-    likes: 750,
-    comments: 28
-  },
-  {
-    id: 'sample4',
-    title: 'Example Meme 4',
-    url: 'https://i.imgur.com/8ZyFfWO.png',
-    author: 'user4',
-    likes: 650,
-    comments: 19
-  }
-];
 
 const SUBREDDITS = ['memes', 'dankmemes', 'wholesomememes', 'me_irl', 'funny', 'ProgrammerHumor', 'memeeconomy', 'AdviceAnimals'];
 const TIME_PERIODS = ['day', 'week', 'month', 'year'];
@@ -174,18 +140,7 @@ export async function fetchRedditMemes(
       if (!response) {
         
         if (!isInitialLoad) {
-          console.warn(`Pagination failed for r/${currentSubreddit}, generating mixed content`);
-          const fallbackWithIds = FALLBACK_MEMES.map((meme, index) => ({
-            ...meme,
-            id: `mixed-${after}-${index}-${Date.now()}`,
-            title: `${meme.title} • r/${currentSubreddit}`,
-            likes: meme.likes! + Math.floor(Math.random() * 500),
-            comments: meme.comments! + Math.floor(Math.random() * 20)
-          }));
-          return { 
-            memes: fallbackWithIds, 
-            after: createNextToken(currentSubreddit, currentTimeframe)
-          };
+          console.warn(`Pagination failed for r/${currentSubreddit}`);
         }
         continue;
       }
@@ -195,18 +150,7 @@ export async function fetchRedditMemes(
       if (!data?.data?.children?.length) {
         console.warn(`No posts found in r/${currentSubreddit}`);
         if (!isInitialLoad) {
-          
-          const fallbackWithIds = FALLBACK_MEMES.slice(0, 3).map((meme, index) => ({
-            ...meme,
-            id: `mixed-${after}-${index}-${Date.now()}`,
-            title: `${meme.title} • r/${currentSubreddit}`,
-            likes: meme.likes! + Math.floor(Math.random() * 300),
-            comments: meme.comments! + Math.floor(Math.random() * 15)
-          }));
-          return { 
-            memes: fallbackWithIds, 
-            after: createNextToken(currentSubreddit, currentTimeframe)
-          };
+          console.warn(`No posts found in r/${currentSubreddit}`);
         }
         continue;
       }
@@ -235,63 +179,31 @@ export async function fetchRedditMemes(
       if (memes.length > 0) {
         console.log(`Successfully fetched ${memes.length} memes from r/${currentSubreddit}${after ? ' (pagination)' : ''}`);
         const nextAfter = data.data.after || createNextToken(currentSubreddit, currentTimeframe);
-        return {
+        const result = {
           memes,
           after: nextAfter 
         };
+        console.log('Reddit: Returning successful result:', { memesCount: result.memes.length, hasAfter: !!result.after });
+        return result;
       } else if (!isInitialLoad) {
-        
-        const fallbackWithIds = FALLBACK_MEMES.slice(0, 2).map((meme, index) => ({
-          ...meme,
-          id: `mixed-${after}-${index}-${Date.now()}`,
-          title: `${meme.title} • r/${currentSubreddit}`,
-          likes: meme.likes! + Math.floor(Math.random() * 200),
-          comments: meme.comments! + Math.floor(Math.random() * 10)
-        }));
-        return { 
-          memes: fallbackWithIds, 
-          after: createNextToken(currentSubreddit, currentTimeframe)
-        };
+        console.warn(`No image memes found in r/${currentSubreddit}`);
       }
     } catch (error) {
       console.error(`Error fetching from r/${currentSubreddit}:`, error);
       
       if (!isInitialLoad) {
-        const fallbackWithIds = FALLBACK_MEMES.slice(0, 2).map((meme, index) => ({
-          ...meme,
-          id: `mixed-${after}-${index}-${Date.now()}`,
-          title: `${meme.title} • r/${currentSubreddit}`,
-          likes: meme.likes! + Math.floor(Math.random() * 150),
-          comments: meme.comments! + Math.floor(Math.random() * 8)
-        }));
-        return { 
-          memes: fallbackWithIds, 
-          after: createNextToken(currentSubreddit, currentTimeframe)
-        };
+        console.error(`Error fetching from r/${currentSubreddit}:`, error);
       }
       continue;
     }
   }
 
   
-  if (isInitialLoad) {
-    console.warn('All subreddit attempts failed, using fallback memes');
-    return {
-      memes: FALLBACK_MEMES,
-      after: createNextToken(subreddit, currentTimeframe) 
-    };
-  } else {
-    console.warn('Pagination failed for all subreddits, generating mixed content');
-    const fallbackWithIds = FALLBACK_MEMES.slice(0, 3).map((meme, index) => ({
-      ...meme,
-      id: `mixed-final-${index}-${Date.now()}`,
-      title: `${meme.title} • Mixed Content`,
-      likes: meme.likes! + Math.floor(Math.random() * 100),
-      comments: meme.comments! + Math.floor(Math.random() * 5)
-    }));
-    return {
-      memes: fallbackWithIds,
-      after: createNextToken('memes', 'week') 
-    };
-  }
+  console.warn('All subreddit attempts failed');
+  const fallbackResult = {
+    memes: [],
+    after: null
+  };
+  console.log('Reddit: Returning fallback result:', fallbackResult);
+  return fallbackResult;
 }

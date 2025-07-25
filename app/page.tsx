@@ -12,28 +12,7 @@ export default async function Home() {
     fetchRedditMemes('memes', 'day')
       .catch((error) => {
         console.error('Error fetching memes:', error);
-        
-        return { 
-          memes: [
-            {
-              id: 'fallback-home-1',
-              title: 'Welcome to Jokester!',
-              url: 'https://i.imgur.com/3vLnXve.png',
-              author: 'system',
-              likes: 1000,
-              comments: 50
-            },
-            {
-              id: 'fallback-home-2',
-              title: 'Content loading...',
-              url: 'https://i.imgur.com/2ZyFfWO.png',
-              author: 'system',
-              likes: 800,
-              comments: 30
-            }
-          ], 
-          after: 'cycle-0-0' 
-        };
+        return { memes: [], after: null };
       }),
     getMemeTemplates()
       .catch((error) => {
