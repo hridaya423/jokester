@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { fetchRedditMemes } from '@/lib/reddit';
 
-export const runtime = 'edge';
+export const runtime = 'nodejs';
 
 export const revalidate = 120;
 
@@ -10,14 +10,33 @@ export async function GET(request: Request) {
   const after = searchParams.get('after');
 
   try {
+    console.log('API: Starting memes fetch, after:', after);
     
     const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Request timeout')), 12000); 
+      setTimeout(() => {
+        console.log('API: Timeout triggered after 12s');
+        reject(new Error('Request timeout'));
+      }, 12000); 
     });
 
-    const fetchPromise = fetchRedditMemes('memes', 'day', after || undefined);
+    const fetchPromise = fetchRedditMemes('memes', 'day', after || undefined)
+      .then(result => {
+        console.log('API: fetchRedditMemes resolved successfully:', result);
+        return result;
+      })
+      .catch(error => {
+        console.error('API: fetchRedditMemes rejected:', error);
+        throw error;
+      });
     
+    console.log('API: Racing between fetch and timeout...');
     const data = await Promise.race([fetchPromise, timeoutPromise]) as Awaited<ReturnType<typeof fetchRedditMemes>>;
+    console.log('API: Promise.race resolved with:', { 
+      data, 
+      hasMemesProperty: 'memes' in (data || {}),
+      dataType: typeof data,
+      dataKeys: data ? Object.keys(data) : []
+    });
     
     console.log('API: Successfully fetched data:', { 
       memesCount: data?.memes?.length || 0, 
